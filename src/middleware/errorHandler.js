@@ -1,21 +1,20 @@
-import createHttpError from 'http-errors';
+// src/middleware/errorHandler.js
+
+import { HttpError } from 'http-errors';
 
 export const errorHandler = (err, req, res, next) => {
-  const status = err.status || 500;
+  console.error('Error Middleware:', err);
 
-  if (req.log) {
-    if (status >= 500) req.log.error(err);
-    else req.log.warn({ err }, err.message);
-  } else {
-    console.error(err);
+  // Якщо помилка створена через http-errors
+  if (err instanceof HttpError) {
+    return res.status(err.status).json({
+      message: err.message || err.name,
+    });
   }
-
-  if (createHttpError.isHttpError(err)) {
-    return res.status(status).json({ message: err.message || err.name });
-  }
-
   const isProd = process.env.NODE_ENV === 'production';
-  return res.status(500).json({
+
+  // Усі інші помилки — як внутрішні
+  res.status(500).json({
     message: isProd
       ? 'Something went wrong. Please try again later.'
       : err.message,
